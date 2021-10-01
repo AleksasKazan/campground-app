@@ -1,0 +1,39 @@
+﻿using System;
+using Dapper;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Persistence.Clients;
+using Persistence.Repositories;
+
+namespace Persistence
+{
+    public static class ServiceExtensions
+    {
+        public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
+        {
+            SqlMapper.AddTypeHandler(new MySqlGuidTypeHandler());
+            SqlMapper.RemoveTypeMap(typeof(Guid));
+            SqlMapper.RemoveTypeMap(typeof(Guid?));
+
+            return services
+                .AddSqlClient(configuration)
+                .AddRepositories();
+        }
+
+        private static IServiceCollection AddRepositories(this IServiceCollection services)
+        {
+            return services
+                .AddSingleton<IUsersRepository, UsersRepository>()
+                .AddSingleton<ICampgroundsRepository, CampgroundsRepository>()
+                .AddSingleton<IImagesRepository, ImagesRepository>()
+                .AddSingleton<ICommentsRepository, CommentsRepository>();
+        }
+
+        private static IServiceCollection AddSqlClient(this IServiceCollection services, IConfiguration configuration)
+        {
+            var connnectionString = configuration.GetConnectionString("SqlConnectionString");
+;
+            return services.AddTransient<ISqlClient>(_ => new SqlClient(connnectionString));
+        }
+    }
+}
